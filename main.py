@@ -1,5 +1,6 @@
-import gurobipy as gp
-from gurobipy import GRB
+from gurobipy import *
+from itertools import product
+
 import numpy as np
 
 import os
@@ -30,30 +31,53 @@ def le_entrada(instancia):
 
 def executa_modelo(v, c, grafo):
     #criando um modelo vazio no gurobi
-    modelo = Model()
+	try:
 
-    tam_xvk = v*c
-    modelo.params.LogToConsole = True
-    modelo.params.TimeLimit
-    x = modelo.addVars(tam_xvk, vtype = GRB.BINARY)
+	    modelo = Model()
 
-    #Funcao objetivo
-    #ESTA ERRADO
-    modelo.setObjective(quicksum(x[i*c + k] for i in range(0, v) for k in range(0, c)), GRB.MINIMIZE)
+	    #modelo.params.LogToConsole = True
+	    modelo.params.TimeLimit
+	    x = modelo.addVars(v, c, vtype = GRB.BINARY)
+	    #print('comecou o x')
+	    #print(x)
+	    #print('terminou o x')
+	    vertices_cores=list(product(range(v),range(c)))
 
-    #Restricao 1
-    #ESTA ERRADO
-    modelo.addConstr(quicksum(x[i*c + (k-1)] for k in grafo) = 1)
-    #Restricao 2
-    #Restricao 3
-    
-    modelo.optimize()
+	    
+	    #Funcao objetivo
+	    #ESTA ERRADO
+	    #modelo.setObjective(quicksum(x[i,j] for i,j in vertices_cores), GRB.MINIMIZE)
+	    
+	    modelo.setObjective(quicksum(x[i,j]for i in range(v)
+                            for j in range(c)
+                            if grafo[i]-1 != j), GRB.MINIMIZE)
+	    #Restricao 1
+	    #ESTA ERRADO
+	    modelo.addConstr(	
+	    				quicksum(x[linha, coluna] 
+    						for coluna in range(c)
+    					) == 1 
+    					for linha in range(v)
+	    				)
+	    #Restricao 2
+	    #Restricao 3
+	    
+	    modelo.optimize()
+
+
+
+	except GurobiError as e:
+		print('Error code ' + str(e.errno) + ': ' + str(e))
+
+	except AttributeError:
+		print('Encountered an attribute error')
 #    for i in range(v):
 #        if x[i].X > 0.5:
 #            print("item:", i, "foi selecionado")
 
 
 #entradas = os.listdir(path='instancias') #list com os nomes dos arquivos de entrada
-entradas = ['rand_10_2.txt']
+entradas = ['rand_10_3.txt']
 for instancia in entradas: #loop para abrir todos os arquivos
-    le_entrada(instancia)
+    v, c, grafo = le_entrada(instancia)
+    executa_modelo(v, c, grafo)
